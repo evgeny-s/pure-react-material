@@ -10,11 +10,9 @@ class Main extends PureComponent {
   constructor() {
     super();
 
-    let state = window.localStorage.getItem('_state');
-
-    this.state = state ? JSON.parse(state) : {
+    this.state = {
       items: [],
-      editKey: 0,
+      editKey: null,
       newEmailTextError: '',
       newNameTextError: ''
     };
@@ -28,12 +26,6 @@ class Main extends PureComponent {
     };
   };
 
-  _setState = (newState) => {
-    this.setState(newState, () => {
-      window.localStorage.setItem('_state', JSON.stringify(this.state));
-    });
-  };
-
   _addNewHandler = () => {
     const {items} = this.state;
     const filtered = items.filter(item => item.edit === true);
@@ -42,8 +34,9 @@ class Main extends PureComponent {
       return false;
     }
 
-    this._setState({
-      items: [this._createObject(), ...this.state.items]
+    this.setState({
+      items: [this._createObject(), ...this.state.items],
+      editKey: 0
     });
   };
 
@@ -52,42 +45,42 @@ class Main extends PureComponent {
     switch (field) {
       case 'email':
         items[this.state.editKey].email = value;
-        this._setState({items: items});
+        this.setState({items: items});
         break;
       case 'name':
         items[this.state.editKey].name = value;
-        this._setState({items: items});
+        this.setState({items: items});
         break;
       default:
         return false;
     }
   };
 
-  _validateNewItem = () => {
+  _validateNewItem = (name, email) => {
     let valid = true;
-    this._setState({
+    this.setState({
       newNameTextError: '',
       newEmailTextError: ''
     });
 
-    if (!this.state.items[this.state.editKey].name) {
-      this._setState({
+    if (!name) {
+      this.setState({
         newNameTextError: 'Name should be not blank!'
       });
 
       valid = false;
     }
 
-    if (!validator.isEmail(this.state.items[this.state.editKey].email)) {
-      this._setState({
+    if (!validator.isEmail(email)) {
+      this.setState({
         newEmailTextError: 'Please, provide valid Email!'
       });
 
       valid = false;
     }
 
-    if (!this.state.items[this.state.editKey].email) {
-      this._setState({
+    if (!email) {
+      this.setState({
         newEmailTextError: 'Email should be not blank!'
       });
 
@@ -98,12 +91,13 @@ class Main extends PureComponent {
   };
 
   _saveItemHandler = () => {
-    if (this._validateNewItem()) {
+    if (this._validateNewItem(this.state.items[this.state.editKey].name, this.state.items[this.state.editKey].email)) {
       let items = this.state.items.slice(0);
       items[this.state.editKey].edit = false;
 
-      this._setState({
-        items: items
+      this.setState({
+        items: items,
+        editKey: null
       });
     }
   };
@@ -111,11 +105,15 @@ class Main extends PureComponent {
   _editButtonHandler = (e) => {
     const key = e.currentTarget.getAttribute('data-key');
     let items = this.state.items.slice(0);
+
+    items.map((item, key) => items[key].edit = false);
     items[key].edit = true;
 
-    this._setState({
+    this.setState({
       items: items,
-      editKey: key
+      editKey: key,
+      newNameTextError: '',
+      newEmailTextError: ''
     });
   };
 
@@ -128,7 +126,7 @@ class Main extends PureComponent {
     let items = this.state.items.slice(0);
     items.splice(key, 1);
 
-    this._setState({
+    this.setState({
       items: items,
       editKey: key
     });
