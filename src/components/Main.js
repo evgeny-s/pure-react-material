@@ -1,6 +1,7 @@
 import React, {PureComponent} from 'react';
 import Button from 'material-ui/RaisedButton';
 import validator from 'validator';
+import {uniqueId, find, remove} from 'lodash';
 
 import logo from '../logo.svg';
 import '../App.css';
@@ -12,7 +13,7 @@ class Main extends PureComponent {
 
     this.state = {
       items: [],
-      editKey: null,
+      editId: null,
       newEmailTextError: '',
       newNameTextError: ''
     };
@@ -20,6 +21,7 @@ class Main extends PureComponent {
 
   _createObject = (name = '', email = '', edit = true) => {
     return {
+      _id: uniqueId(),
       name: name,
       email: email,
       edit: edit
@@ -27,36 +29,40 @@ class Main extends PureComponent {
   };
 
   _addNewHandler = () => {
-    const {items} = this.state;
-    const filtered = items.filter(item => item.edit === true);
+    const filtered = find(this.state.items, item => item._id === this.state.editId);
 
-    if (filtered.length === 1) {
+    if (filtered) {
       return false;
     }
+    let newObject = this._createObject();
 
     this.setState({
-      items: [this._createObject(), ...this.state.items],
-      editKey: 0
+      items: [newObject, ...this.state.items],
+      editId: newObject._id
     });
   };
 
   _editTextField = (field, value) => {
     let items = this.state.items.slice(0);
-    switch (field) {
-      case 'email':
-        items[this.state.editKey].email = value;
-        this.setState({items: items});
-        break;
-      case 'name':
-        items[this.state.editKey].name = value;
-        this.setState({items: items});
-        break;
-      default:
-        return false;
-    }
+    items.forEach((item, index) => {
+      if (item._id === this.state.editId) {
+        switch (field) {
+          case 'email':
+            items[index].email = value;
+            break;
+          case 'name':
+            items[index].name = value;
+            break;
+          default:
+            return false;
+        }
+      }
+    });
+
+    this.setState({items});
   };
 
-  _validateNewItem = (name, email) => {
+  _validate = (name, email) => {
     let valid = true;
     this.setState({
       newNameTextError: '',
@@ -91,27 +97,42 @@ class Main extends PureComponent {
   };
 
   _saveItemHandler = () => {
-    if (this._validateNewItem(this.state.items[this.state.editKey].name, this.state.items[this.state.editKey].email)) {
+    let filtered = find(this.state.items, (item) => item._id === this.state.editId);
+    if (this._validate(filtered.name, filtered.email)) {
       let items = this.state.items.slice(0);
-      items[this.state.editKey].edit = false;
+      items.forEach((item, index) => {
+        if (item._id === this.state.editId) {
+          items[index].edit = false;
+        }
+      });
 
       this.setState({
-        items: items,
-        editKey: null
+        items,
+        editId: null
       });
     }
   };
 
   _editButtonHandler = (e) => {
-    const key = e.currentTarget.getAttribute('data-key');
+    const id = e.currentTarget.getAttribute('data-id');
     let items = this.state.items.slice(0);
+    let editId = null;
 
-    items.map((item, key) => items[key].edit = false);
-    items[key].edit = true;
+    items.forEach((item, index) => {
+      if (item._id === id) {
+        items[index].edit = true;
+        editId = item._id;
+      } else {
+        if (!this._validate(item.name, item.email)) {
+          items.splice(index, 1);
+        }
+        items[index].edit = false;
+      }
+    });
 
     this.setState({
-      items: items,
-      editKey: key,
+      items,
+      editId,
       newNameTextError: '',
       newEmailTextError: ''
     });
@@ -122,13 +143,14 @@ class Main extends PureComponent {
       return false;
     }
 
-    const key = e.currentTarget.getAttribute('data-key');
     let items = this.state.items.slice(0);
-    items.splice(key, 1);
+
+    remove(items, {
+      _id: e.currentTarget.getAttribute('data-id')
+    });
 
     this.setState({
       items: items,
-      editKey: key
     });
   };
 

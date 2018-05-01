@@ -26,7 +26,7 @@ class Grid extends PureComponent {
         <TableBody>
           {
             this.props.items.map((item, index) => (
-              <TableRow key={index}>
+              <TableRow key={item._id}>
                 <TableRowColumn>
                   <EditableField
                     value={item.name}
@@ -53,8 +53,8 @@ class Grid extends PureComponent {
                     item.edit ?
                       <Button onClick={this.props.saveItemHandler}>Save</Button> :
                       <div>
-                        <Button primary={true} data-key={index} onClick={this.props.editButtonHandler}>Edit</Button>
-                        <Button secondary={true} data-key={index} onClick={this.props.deleteButtonHandler}>Delete</Button>
+                        <Button primary={true} data-id={item._id} onClick={this.props.editButtonHandler}>Edit</Button>
+                        <Button secondary={true} data-id={item._id} onClick={this.props.deleteButtonHandler}>Delete</Button>
                       </div>
                   }
                 </TableRowColumn>
